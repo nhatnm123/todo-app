@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>To-do App Nâng Cấp</title>
+  <style>
+    :root {
+      --primary: #6c63ff;
+      --completed-bg: #e0ffe0;
+      --todo-bg: #fff;
+      --text-color: #333;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+    background: linear-gradient(135deg, #d0f1d6, #324657);
+    margin: 0;
+    padding: 40px 16px;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 600px;
+      padding: 24px;
+      min-height: 200px;
+      /* transition: min-height 0.3s ease; */
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--primary);
+      margin-bottom: 24px;
+    }
+
+    .input-group {
+      display: flex;
+      margin-bottom: 20px;
+    }
+
+    .input-group input {
+      flex: 1;
+      padding: 12px 14px;
+      border: 1px solid #ccc;
+      border-radius: 10px 0 0 10px;
+      font-size: 1rem;
+    }
+
+    .input-group button {
+      padding: 12px 20px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 0 10px 10px 0;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .section {
+      margin-top: 30px;
+    }
+
+    .section h2 {
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+      color: var(--text-color);
+      border-bottom: 1px solid #eee;
+      padding-bottom: 4px;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    li {
+      background: var(--todo-bg);
+      padding: 12px 16px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+
+    li.completed {
+      background: var(--completed-bg);
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    .task-text {
+      flex: 1;
+      margin-right: 10px;
+    }
+
+    .actions button {
+      background: none;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-left: 8px;
+      color: #666;
+    }
+
+    .actions button:hover {
+      color: #000;
+    }
+
+    input.edit-input {
+      flex: 1;
+      padding: 6px 10px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .empty {
+      color: #aaa;
+      font-style: italic;
+      margin-top: 10px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📝 Quản lý Công việc</h1>
+
+    <div class="input-group">
+      <input type="text" id="taskInput" placeholder="Nhập việc cần làm..." />
+      <button onclick="addTask()">Thêm</button>
+    </div>
+
+    <div class="section">
+      <h2>📌 Việc cần làm</h2>
+      <ul id="todoList"></ul>
+      <div id="todoEmpty" class="empty">Không có việc nào.</div>
+    </div>
+
+    <div class="section">
+      <h2>✅ Đã hoàn thành</h2>
+      <ul id="doneList"></ul>
+      <div id="doneEmpty" class="empty">Chưa hoàn thành việc nào.</div>
+    </div>
+  </div>
+
+  <script>
+    const taskInput = document.getElementById("taskInput");
+    const todoList = document.getElementById("todoList");
+    const doneList = document.getElementById("doneList");
+    const todoEmpty = document.getElementById("todoEmpty");
+    const doneEmpty = document.getElementById("doneEmpty");
+
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+    function saveTasks() {
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+    }
+
+    function renderTasks() {
+      todoList.innerHTML = "";
+      doneList.innerHTML = "";
+
+      let todoCount = 0, doneCount = 0;
+
+      tasks.forEach((task, index) => {
+        const li = document.createElement("li");
+        li.className = task.completed ? "completed" : "";
+
+        const content = document.createElement("span");
+        content.className = "task-text";
+        content.textContent = task.text;
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        const editBtn = document.createElement("button");
+        editBtn.innerHTML = "✏️";
+        editBtn.onclick = () => editTask(index);
+
+        const toggleBtn = document.createElement("button");
+        toggleBtn.innerHTML = task.completed ? "🔁" : "✅";
+        toggleBtn.onclick = () => toggleTask(index);
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.innerHTML = "🗑️";
+        deleteBtn.onclick = () => deleteTask(index);
+
+        actions.append(editBtn, toggleBtn, deleteBtn);
+        li.append(content, actions);
+
+        if (task.completed) {
+          doneList.appendChild(li);
+          doneCount++;
+        } else {
+          todoList.appendChild(li);
+          todoCount++;
+        }
+      });
+
+      todoEmpty.style.display = todoCount === 0 ? "block" : "none";
+      doneEmpty.style.display = doneCount === 0 ? "block" : "none";
+    }
+
+    function addTask() {
+      const text = taskInput.value.trim();
+      if (text) {
+        tasks.push({ text, completed: false });
+        taskInput.value = "";
+        saveTasks();
+        renderTasks();
+      }
+    }
+
+    function deleteTask(index) {
+      tasks.splice(index, 1);
+      saveTasks();
+      renderTasks();
+    }
+
+    function toggleTask(index) {
+      tasks[index].completed = !tasks[index].completed;
+      saveTasks();
+      renderTasks();
+    }
+
+    function editTask(index) {
+      const list = tasks[index].completed ? doneList : todoList;
+      const li = list.children[tasks[index].completed
+        ? tasks.filter(t => t.completed).indexOf(tasks[index])
+        : tasks.filter(t => !t.completed).indexOf(tasks[index])
+      ];
+      const textEl = li.querySelector(".task-text");
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = tasks[index].text;
+      input.className = "edit-input";
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          tasks[index].text = input.value.trim() || tasks[index].text;
+          saveTasks();
+          renderTasks();
+        } else if (e.key === "Escape") {
+          renderTasks();
+        }
+      });
+
+      textEl.replaceWith(input);
+      input.focus();
+    }
+
+    renderTasks();
+  </script>
+</body>
+</html>
